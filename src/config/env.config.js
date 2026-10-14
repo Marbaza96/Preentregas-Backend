@@ -1,8 +1,8 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-const PORT = process.env.PORT;
-const NODE_ENV = process.env.NODE_ENV;
+const PORT = process.env.PORT || 8080;
+const NODE_ENV = process.env.NODE_ENV || "development";
 
 if (!PORT) {
     throw new Error("La variable PORT es obligatoria");
