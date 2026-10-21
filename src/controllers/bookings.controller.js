@@ -1,98 +1,114 @@
-import BookingManager from "../managers/BookingManager.js";
-import ServiceManager from "../managers/ServiceManager.js";
+import BookingsService from "../services/bookings.service.js";
+import { validateId } from "../validators/id.validator.js";
 
-const bookingManager = new BookingManager();
-const serviceManager = new ServiceManager();
+const bookingsService = new BookingsService();
 
 // Obtener todas las reservas
-export const getBookings = async (req, res) => {
+export const getBookings = async (req, res, next) => {
     try {
-        const bookings = await bookingManager.getBookings();
+        const bookings = await bookingsService.getBookings();
+
         res.status(200).json(bookings);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        next(error);
     }
 };
 
 // Obtener una reserva por ID
-export const getBookingById = async (req, res) => {
+export const getBookingById = async (req, res, next) => {
     try {
-        const { bid } = req.params;
-        const numericId = Number(bid);
-        const booking = await bookingManager.getBookingById(numericId);
+        const numericId = validateId(req.params.bid);
+
+        const booking = await bookingsService.getBookingById(numericId);
 
         if (!booking) {
-            return res.status(404).json({ error: "Reserva no encontrada" });
+            return res.status(404).json({
+                error: "Reserva no encontrada"
+            });
         }
 
         res.status(200).json(booking);
+
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        next(error);
     }
 };
 
 // Crear una nueva reserva
-export const createBooking = async (req, res) => {
+export const createBooking = async (req, res, next) => {
     try {
-        const createdBooking = await bookingManager.createBooking(req.body);
+        const createdBooking = await bookingsService.createBooking(req.body);
+
         res.status(201).json(createdBooking);
+
     } catch (error) {
-        const statusCode = error.statusCode || 500;
-        res.status(statusCode).json({ error: error.message });
+        next(error);
     }
 };
 
 // Agregar un servicio a una reserva
-export const addServiceToBooking = async (req, res) => {
+export const addServiceToBooking = async (req, res, next) => {
     try {
-        const { bid, sid } = req.params;
-        const numericBookingId = Number(bid);
-        const numericServiceId = Number(sid);
+        const numericBookingId = validateId(req.params.bid);
+        const numericServiceId = validateId(req.params.sid);
 
-        const service = await serviceManager.getServiceById(numericServiceId);
+        const updatedBooking = await bookingsService.addServiceToBooking(
+            numericBookingId,
+            { id: numericServiceId }
+        );
 
-        if (!service) {
-            return res.status(404).json({ error: "Servicio no encontrado" });
+        if (!updatedBooking) {
+            return res.status(404).json({
+                error: "Reserva no encontrada"
+            });
         }
-
-        const updatedBooking = await bookingManager.addServiceToBooking(numericBookingId, service);
 
         res.status(200).json(updatedBooking);
 
     } catch (error) {
-        const statusCode = error.statusCode || 500;
-        res.status(statusCode).json({ error: error.message });
+        next(error);
     }
 };
 
 // Actualizar una reserva
-export const updateBooking = async (req, res) => {
+export const updateBooking = async (req, res, next) => {
     try {
-        const { id } = req.params;
-        const numericId = Number(id);
+        const numericId = validateId(req.params.bid);
 
-        const updatedBooking = await bookingManager.updateBooking(numericId, req.body);
+        const updatedBooking = await bookingsService.updateBooking(
+            numericId,
+            req.body
+        );
+
+        if (!updatedBooking) {
+            return res.status(404).json({
+                error: "Reserva no encontrada"
+            });
+        }
 
         res.status(200).json(updatedBooking);
 
     } catch (error) {
-        const statusCode = error.statusCode || 500;
-        res.status(statusCode).json({ error: error.message });
+        next(error);
     }
 };
 
 // Eliminar una reserva
-export const deleteBooking = async (req, res) => {
+export const deleteBooking = async (req, res, next) => {
     try {
-        const { id } = req.params;
-        const numericId = Number(id);
+        const numericId = validateId(req.params.bid);
 
-        const deletedBooking = await bookingManager.deleteBooking(numericId);
+        const deletedBooking = await bookingsService.deleteBooking(numericId);
+
+        if (!deletedBooking) {
+            return res.status(404).json({
+                error: "Reserva no encontrada"
+            });
+        }
 
         res.status(200).json(deletedBooking);
 
     } catch (error) {
-        const statusCode = error.statusCode || 500;
-        res.status(statusCode).json({ error: error.message });
+        next(error);
     }
 };

@@ -16,10 +16,10 @@ router.post("/", createBooking);
 router.post("/:bid/services/:sid", addServiceToBooking);
 
 // Actualizar una reserva
-router.put("/:id", updateBooking);
+router.put("/:bid", updateBooking);
 
 // Eliminar una reserva
-router.delete("/:id", deleteBooking);
+router.delete("/:bid", deleteBooking);
 
 
 export default router;

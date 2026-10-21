@@ -1,48 +1,39 @@
 # API de Servicios y Reservas
 
-Proyecto desarrollado en Node.js para gestionar servicios y reservas de un sistema de turnos mediante una API REST con Express.
+API REST desarrollada con **Node.js y Express** para gestionar servicios y reservas de un sistema de turnos.
 
-La aplicación utiliza una arquitectura organizada en rutas, controladores y managers, separando las responsabilidades de cada componente. Los datos se almacenan en archivos JSON mediante FileSystem, permitiendo realizar operaciones de consulta, creación, actualización y eliminación de servicios y reservas.
+Implementa una arquitectura en capas y persistencia de datos mediante archivos JSON utilizando FileSystem (`fs/promises`).
 
-## Instalación
+## Instalación y ejecución
 
-Clonar el repositorio e instalar las dependencias:
+Instalar las dependencias:
 
 ```bash
 npm install
 ```
 
-## Ejecución
-
-Para ejecutar el proyecto:
+Iniciar el servidor:
 
 ```bash
 npm start
 ```
 
-Para ejecutar el proyecto en modo desarrollo:
+Ejecutar en modo desarrollo:
 
 ```bash
 npm run dev
 ```
 
-El servidor se ejecuta en el puerto configurado en las variables de entorno.
-
 ## Variables de entorno
 
-Crear un archivo `.env` en la raíz del proyecto tomando como referencia `.env.example`.
+Crear un archivo `.env` en la raíz del proyecto, tomando como referencia `.env.example`:
 
 ```env
 PORT=8080
 NODE_ENV=development
 ```
 
-Las variables utilizadas son:
-
-- `PORT`: puerto en el que se ejecuta el servidor.
-- `NODE_ENV`: entorno de ejecución de la aplicación.
-
-La configuración se administra desde `src/config/env.config.js`, utilizando dotenv.
+La configuración se gestiona desde `src/config/env.config.js` mediante `dotenv`. Si las variables no están definidas, se utilizan los valores predeterminados.
 
 ## Estructura del proyecto
 
@@ -53,271 +44,148 @@ src/
 ├── controllers/
 │   ├── services.controller.js
 │   └── bookings.controller.js
+├── dao/
+│   ├── services.dao.js
+│   └── bookings.dao.js
 ├── data/
 │   ├── services.json
 │   └── bookings.json
-├── managers/
-│   ├── ServiceManager.js
-│   └── BookingManager.js
+├── middlewares/
+│   └── errorHandler.js
+├── repositories/
+│   ├── services.repository.js
+│   └── bookings.repository.js
 ├── routes/
 │   ├── services.router.js
 │   └── bookings.router.js
+├── services/
+│   ├── services.service.js
+│   └── bookings.service.js
+├── utils/
+│   └── AppError.js
+├── validators/
+│   ├── services.validator.js
+│   ├── bookings.validator.js
+│   └── id.validator.js
 ├── app.js
 └── server.js
-
-.env
-.env.example
-.gitignore
-package.json
-package-lock.json
-README.md
 ```
 
-## Arquitectura de la aplicación
+## Arquitectura
 
-El proyecto organiza sus funcionalidades en diferentes componentes para separar responsabilidades y facilitar el mantenimiento del código.
+El proyecto separa las responsabilidades mediante el siguiente flujo:
 
-### Routes
+**Router → Controller → Service → Repository → DAO → JSON**
 
-Los archivos de rutas definen los endpoints disponibles y relacionan cada petición HTTP con su controlador correspondiente.
+- **Routes:** definen los endpoints de la API.
+- **Controllers:** reciben las solicitudes HTTP y gestionan las respuestas.
+- **Services:** implementan la lógica de negocio y las validaciones.
+- **Repositories:** conectan la lógica de negocio con la persistencia.
+- **DAO:** realizan las operaciones de lectura y escritura en archivos JSON.
 
-- `services.router.js`: rutas para gestionar servicios.
-- `bookings.router.js`: rutas para gestionar reservas.
-
-### Controllers
-
-Los controladores reciben las peticiones HTTP, procesan los parámetros necesarios, llaman a los métodos de los managers y devuelven las respuestas correspondientes.
-
-También administran los códigos de estado HTTP y el manejo de errores.
-
-- `services.controller.js`: controlador de servicios.
-- `bookings.controller.js`: controlador de reservas.
-
-### Managers
-
-Los managers contienen la lógica de gestión de los recursos y las operaciones necesarias para trabajar con los datos almacenados.
-
-- `ServiceManager.js`: gestión de servicios.
-- `BookingManager.js`: gestión de reservas.
-
-### Persistencia de datos
-
-La aplicación utiliza archivos JSON para almacenar la información.
-
-- `services.json`: almacena los servicios.
-- `bookings.json`: almacena las reservas.
-
-Las operaciones de lectura y escritura se realizan mediante FileSystem utilizando métodos asíncronos.
-
-### Configuración del servidor
-
-- `app.js`: configura Express, el middleware para procesar JSON y las rutas de la API.
-- `server.js`: inicia el servidor utilizando el puerto configurado.
-- `env.config.js`: carga y valida las variables de entorno.
+Se incluyen validadores para los datos recibidos y un middleware global para el manejo de errores.
 
 ## Recursos
 
-### Services
+**Services:** `id`, `name`, `description`, `duration`, `price`, `category`, `available`.
 
-Cada servicio representa una prestación disponible dentro del sistema de turnos y reservas.
+**Bookings:** `id`, `clientName`, `clientEmail`, `date`, `time`, `status`, `services`.
 
-Cada servicio contiene las siguientes propiedades:
+Los servicios asociados a una reserva se representan mediante un arreglo de objetos con las propiedades `service` (ID del servicio) y `quantity` (cantidad).
 
-- `id`: identificador único.
-- `name`: nombre del servicio.
-- `description`: descripción del servicio.
-- `duration`: duración del servicio.
-- `price`: precio del servicio.
-- `category`: categoría a la que pertenece.
-- `available`: disponibilidad del servicio.
+Los identificadores se generan automáticamente y las actualizaciones permiten modificar parcialmente los campos autorizados.
 
-### Bookings
-
-Cada reserva representa un turno registrado dentro del sistema.
-
-Cada reserva contiene las siguientes propiedades:
-
-- `id`: identificador único.
-- `clientName`: nombre del cliente.
-- `clientEmail`: correo electrónico del cliente.
-- `date`: fecha de la reserva.
-- `time`: horario de la reserva.
-- `status`: estado de la reserva.
-- `services`: servicios asociados a la reserva.
-
-Los servicios asociados se almacenan mediante su ID y cantidad:
-
-```json
-{
-    "service": 1,
-    "quantity": 1
-}
-```
-
-## API REST
+## Endpoints
 
 ### Services
 
 | Método | Endpoint | Descripción |
 |---|---|---|
-| GET | `/api/services` | Obtener todos los servicios |
-| GET | `/api/services/:id` | Obtener un servicio por ID |
-| POST | `/api/services` | Crear un servicio |
-| PUT | `/api/services/:id` | Actualizar un servicio |
-| DELETE | `/api/services/:id` | Eliminar un servicio |
+| GET | `/api/services` | Listar servicios |
+| GET | `/api/services/:id` | Obtener servicio por ID |
+| POST | `/api/services` | Crear servicio |
+| PUT | `/api/services/:id` | Actualizar servicio |
+| DELETE | `/api/services/:id` | Eliminar servicio |
 
-El listado de servicios permite aplicar filtros opcionales mediante los query params `category` y `available`.
+El endpoint GET admite filtros opcionales por `category` y `available`.
 
-### Ejemplos de peticiones HTTP - Services
-
-**Obtener todos los servicios:**
-
-```http
-GET http://localhost:8080/api/services
-```
-
-**Obtener un servicio por ID:**
-
-```http
-GET http://localhost:8080/api/services/1
-```
-
-**Obtener servicios filtrados:**
+Ejemplo:
 
 ```http
 GET http://localhost:8080/api/services?category=peluqueria&available=true
 ```
 
-**Crear un servicio:**
-
-```http
-POST http://localhost:8080/api/services
-Content-Type: application/json
-
-{
-    "name": "Peinado",
-    "description": "Servicio de peinado",
-    "duration": 30,
-    "price": 1100,
-    "category": "peluqueria",
-    "available": true
-}
-```
-
-**Actualizar un servicio:**
-
-```http
-PUT http://localhost:8080/api/services/1
-Content-Type: application/json
-
-{
-    "price": 1200,
-    "available": false
-}
-```
-
-**Eliminar un servicio:**
-
-```http
-DELETE http://localhost:8080/api/services/1
-```
-
 ### Bookings
 
 | Método | Endpoint | Descripción |
 |---|---|---|
-| GET | `/api/bookings` | Obtener todas las reservas |
-| GET | `/api/bookings/:bid` | Obtener una reserva por ID |
-| POST | `/api/bookings` | Crear una reserva |
-| PUT | `/api/bookings/:id` | Actualizar una reserva |
-| POST | `/api/bookings/:bid/services/:sid` | Agregar un servicio a una reserva |
-| DELETE | `/api/bookings/:id` | Eliminar una reserva |
+| GET | `/api/bookings` | Listar reservas |
+| GET | `/api/bookings/:bid` | Obtener reserva por ID |
+| POST | `/api/bookings` | Crear reserva |
+| PUT | `/api/bookings/:bid` | Actualizar reserva |
+| DELETE | `/api/bookings/:bid` | Eliminar reserva |
+| POST | `/api/bookings/:bid/services/:sid` | Agregar servicio a una reserva |
 
-### Ejemplos de peticiones HTTP - Bookings
+Al agregar un servicio a una reserva, se comprueba su existencia. Si ya está asociado, se incrementa su cantidad.
 
-**Obtener todas las reservas:**
+## Ejemplos de creación
 
-```http
-GET http://localhost:8080/api/bookings
-```
+### Crear un servicio
 
-**Obtener una reserva por ID:**
+**POST** `/api/services`
 
-```http
-GET http://localhost:8080/api/bookings/1
-```
-
-**Crear una reserva:**
-
-```http
-POST http://localhost:8080/api/bookings
-Content-Type: application/json
-
+```json
 {
-    "clientName": "Cliente Prueba",
-    "clientEmail": "cliente@email.com",
-    "date": "2026-10-15",
-    "time": "10:00",
-    "status": "pendiente"
+  "name": "Peinado",
+  "description": "Servicio de peinado",
+  "duration": 40,
+  "price": 1100,
+  "category": "peluqueria",
+  "available": true
 }
 ```
 
-**Agregar un servicio a una reserva:**
+### Crear una reserva
 
-```http
-POST http://localhost:8080/api/bookings/1/services/1
-```
+**POST** `/api/bookings`
 
-**Actualizar una reserva:**
-
-```http
-PUT http://localhost:8080/api/bookings/1
-Content-Type: application/json
-
+```json
 {
-    "time": "14:30",
-    "status": "confirmada"
+  "clientName": "Cliente Prueba",
+  "clientEmail": "cliente@email.com",
+  "date": "2026-10-25",
+  "time": "10:00",
+  "status": "pendiente",
+  "services": []
 }
-```
-
-**Eliminar una reserva:**
-
-```http
-DELETE http://localhost:8080/api/bookings/1
 ```
 
 ## Códigos de estado HTTP
 
-La API utiliza códigos de estado HTTP para indicar el resultado de las operaciones.
-
 | Código | Descripción |
 |---|---|
-| 200 | Operación realizada correctamente |
-| 201 | Recurso creado correctamente |
-| 400 | Datos inválidos o solicitud incorrecta |
+| 200 | Operación exitosa |
+| 201 | Recurso creado |
+| 400 | Datos inválidos |
 | 404 | Recurso no encontrado |
 | 500 | Error interno del servidor |
 
-Los errores se devuelven mediante respuestas JSON con un mensaje descriptivo.
-
-Ejemplo:
+Las respuestas de error utilizan el formato:
 
 ```json
 {
-    "error": "Servicio no encontrado"
+  "error": "Servicio no encontrado"
 }
 ```
 
-## Pruebas de la API
+## Pruebas
 
-Los endpoints pueden probarse utilizando Postman o cualquier cliente HTTP compatible.
+Los endpoints pueden probarse mediante **Postman**, utilizando como URL base:
 
-Para realizar las pruebas:
+```text
+http://localhost:8080
+```
 
-1. Iniciar el servidor con `npm run dev`.
-2. Seleccionar el método HTTP correspondiente.
-3. Ingresar la URL del endpoint.
-4. Cuando corresponda, enviar los datos en formato JSON.
-5. Verificar el código de estado y la respuesta obtenida.
+La API permite consultar, crear, actualizar y eliminar recursos, filtrar servicios, asociarlos a reservas y comprobar las validaciones y el manejo de errores.
 
-Las operaciones realizadas se reflejan en los archivos JSON utilizados para la persistencia de datos.
+Los cambios realizados se almacenan en los archivos JSON correspondientes.
