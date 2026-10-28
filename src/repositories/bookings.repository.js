@@ -29,9 +29,6 @@ class BookingsRepository {
     async delete(id) {
         return await this.dao.delete(id);
     }
-
-
-
 }
 
 export default BookingsRepository;

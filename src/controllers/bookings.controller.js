@@ -1,5 +1,5 @@
 import BookingsService from "../services/bookings.service.js";
-import { validateId } from "../validators/id.validator.js";
+import { ensureFound } from "../utils/notFound.js";
 
 const bookingsService = new BookingsService();
 
@@ -17,15 +17,11 @@ export const getBookings = async (req, res, next) => {
 // Obtener una reserva por ID
 export const getBookingById = async (req, res, next) => {
     try {
-        const numericId = validateId(req.params.bid);
+        const bookingId = req.params.bid;
 
-        const booking = await bookingsService.getBookingById(numericId);
+        const booking = await bookingsService.getBookingById(bookingId);
 
-        if (!booking) {
-            return res.status(404).json({
-                error: "Reserva no encontrada"
-            });
-        }
+        ensureFound(booking, "Reserva no encontrada");
 
         res.status(200).json(booking);
 
@@ -49,19 +45,15 @@ export const createBooking = async (req, res, next) => {
 // Agregar un servicio a una reserva
 export const addServiceToBooking = async (req, res, next) => {
     try {
-        const numericBookingId = validateId(req.params.bid);
-        const numericServiceId = validateId(req.params.sid);
+        const bookingId = req.params.bid;
+        const serviceId = req.params.sid;
 
         const updatedBooking = await bookingsService.addServiceToBooking(
-            numericBookingId,
-            { id: numericServiceId }
+            bookingId,
+            serviceId
         );
 
-        if (!updatedBooking) {
-            return res.status(404).json({
-                error: "Reserva no encontrada"
-            });
-        }
+        ensureFound(updatedBooking, "Reserva no encontrada");
 
         res.status(200).json(updatedBooking);
 
@@ -70,21 +62,18 @@ export const addServiceToBooking = async (req, res, next) => {
     }
 };
 
+
 // Actualizar una reserva
 export const updateBooking = async (req, res, next) => {
     try {
-        const numericId = validateId(req.params.bid);
+        const bookingId = req.params.bid;
 
         const updatedBooking = await bookingsService.updateBooking(
-            numericId,
+            bookingId,
             req.body
         );
 
-        if (!updatedBooking) {
-            return res.status(404).json({
-                error: "Reserva no encontrada"
-            });
-        }
+        ensureFound(updatedBooking, "Reserva no encontrada");
 
         res.status(200).json(updatedBooking);
 
@@ -96,15 +85,11 @@ export const updateBooking = async (req, res, next) => {
 // Eliminar una reserva
 export const deleteBooking = async (req, res, next) => {
     try {
-        const numericId = validateId(req.params.bid);
+        const bookingId = req.params.bid;
 
-        const deletedBooking = await bookingsService.deleteBooking(numericId);
+        const deletedBooking = await bookingsService.deleteBooking(bookingId);
 
-        if (!deletedBooking) {
-            return res.status(404).json({
-                error: "Reserva no encontrada"
-            });
-        }
+        ensureFound(deletedBooking, "Reserva no encontrada");
 
         res.status(200).json(deletedBooking);
 

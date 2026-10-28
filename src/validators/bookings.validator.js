@@ -1,7 +1,16 @@
 import AppError from "../utils/AppError.js";
+import { validateId } from "./id.validator.js";
 
 // Validar los datos de una reserva
 function validateBooking(bookingData, isUpdate = false) {
+
+    if (
+        !bookingData ||
+        typeof bookingData !== "object" ||
+        Array.isArray(bookingData)
+    ) {
+        throw new AppError("Los datos de la reserva deben ser un objeto válido", 400);
+    }
 
     const {
         clientName,
@@ -64,6 +73,7 @@ function validateBooking(bookingData, isUpdate = false) {
         );
     }
 
+
     // Validar los elementos del arreglo de servicios
     if (Array.isArray(services)) {
         for (const item of services) {
@@ -71,8 +81,6 @@ function validateBooking(bookingData, isUpdate = false) {
                 !item ||
                 typeof item !== "object" ||
                 Array.isArray(item) ||
-                !Number.isInteger(item.service) ||
-                item.service <= 0 ||
                 !Number.isInteger(item.quantity) ||
                 item.quantity <= 0
             ) {
@@ -81,10 +89,13 @@ function validateBooking(bookingData, isUpdate = false) {
                     400
                 );
             }
+
+            validateId(item.service);
+
         }
     }
-
 }
+
 
 // Filtrar los campos permitidos de una reserva
 export function filterAllowedBookingFields(data) {

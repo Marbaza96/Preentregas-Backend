@@ -31,30 +31,18 @@ class ServicesService {
     }
 
     // Crear un nuevo servicio
+
     async addService(serviceData) {
         validateService(serviceData);
 
-        const services = await this.repository.getAll();
-
-        const newId = services.length > 0
-            ? Math.max(...services.map((service) => Number(service.id))) + 1
-            : 1;
-
-        const newService = {
-            ...serviceData,
-            id: newId
-        };
+        const newService = filterAllowedFields(serviceData);
 
         return await this.repository.create(newService);
     }
 
+
     // Actualizar un servicio existente
     async updateService(id, updatedData) {
-        const existingService = await this.repository.getById(id);
-
-        if (!existingService) {
-            return null;
-        }
 
         validateService(updatedData, true);
 

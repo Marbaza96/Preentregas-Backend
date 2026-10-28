@@ -1,5 +1,6 @@
 import ServicesService from "../services/services.service.js";
-import { validateId } from "../validators/id.validator.js";
+import AppError from "../utils/AppError.js";
+import { ensureFound } from "../utils/notFound.js";
 
 const servicesService = new ServicesService();
 
@@ -7,6 +8,14 @@ const servicesService = new ServicesService();
 export const getServices = async (req, res, next) => {
     try {
         const { category, available } = req.query;
+
+        if (
+            available !== undefined &&
+            available !== "true" &&
+            available !== "false"
+        ) {
+            throw new AppError("El filtro available debe ser true o false", 400);
+        }
 
         const availableBoolean = available !== undefined
             ? available === "true"
@@ -27,15 +36,11 @@ export const getServices = async (req, res, next) => {
 // Obtener un servicio por ID
 export const getServiceById = async (req, res, next) => {
     try {
-        const numericId = validateId(req.params.id);
+        const id = req.params.id;
 
-        const service = await servicesService.getServiceById(numericId);
+        const service = await servicesService.getServiceById(id);
 
-        if (!service) {
-            return res.status(404).json({
-                error: "Servicio no encontrado"
-            });
-        }
+        ensureFound(service, "Servicio no encontrado");
 
         res.status(200).json(service);
 
@@ -59,18 +64,14 @@ export const createService = async (req, res, next) => {
 // Actualizar un servicio existente
 export const updateService = async (req, res, next) => {
     try {
-        const numericId = validateId(req.params.id);
+        const id = req.params.id;
 
         const updatedService = await servicesService.updateService(
-            numericId,
+            id,
             req.body
         );
 
-        if (!updatedService) {
-            return res.status(404).json({
-                error: "Servicio no encontrado"
-            });
-        }
+        ensureFound(updatedService, "Servicio no encontrado");
 
         res.status(200).json(updatedService);
 
@@ -82,15 +83,11 @@ export const updateService = async (req, res, next) => {
 // Eliminar un servicio por ID
 export const deleteService = async (req, res, next) => {
     try {
-        const numericId = validateId(req.params.id);
+        const id = req.params.id;
 
-        const deletedService = await servicesService.deleteService(numericId);
+        const deletedService = await servicesService.deleteService(id);
 
-        if (!deletedService) {
-            return res.status(404).json({
-                error: "Servicio no encontrado"
-            });
-        }
+        ensureFound(deletedService, "Servicio no encontrado");
 
         res.status(200).json(deletedService);
 

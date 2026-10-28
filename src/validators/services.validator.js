@@ -2,6 +2,15 @@ import AppError from "../utils/AppError.js";
 
 // Validar los datos de un servicio
 function validateService(serviceData, isUpdate = false) {
+
+    if (
+        !serviceData ||
+        typeof serviceData !== "object" ||
+        Array.isArray(serviceData)
+    ) {
+        throw new AppError("Los datos del servicio deben ser un objeto válido", 400);
+    }
+
     const {
         name,
         description,
@@ -27,7 +36,7 @@ function validateService(serviceData, isUpdate = false) {
     if (
         (name !== undefined && (typeof name !== "string" || !name.trim())) ||
         (description !== undefined && (typeof description !== "string" || !description.trim())) ||
-        (duration !== undefined && (typeof duration !== "number" || !Number.isFinite(duration) || duration <= 0)) ||
+        (duration !== undefined && (typeof duration !== "number" || !Number.isFinite(duration) || duration < 1)) ||
         (price !== undefined && (typeof price !== "number" || !Number.isFinite(price) || price < 0)) ||
         (category !== undefined && (typeof category !== "string" || !category.trim())) ||
         (available !== undefined && typeof available !== "boolean")

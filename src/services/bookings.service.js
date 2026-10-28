@@ -9,6 +9,20 @@ class BookingsService {
         this.servicesRepository = new ServicesRepository();
     }
 
+    // Verificar que los servicios referenciados existan
+    async validateExistingServices(services) {
+        if (!services) return;
+
+        for (const item of services) {
+            const existingService =
+                await this.servicesRepository.getById(item.service);
+
+            if (!existingService) {
+                throw new AppError("Servicio no encontrado", 404);
+            }
+        }
+    }
+
     // Obtener todas las reservas
     async getBookings() {
         return await this.repository.getAll();
@@ -23,36 +37,22 @@ class BookingsService {
     async createBooking(bookingData) {
         validateBooking(bookingData);
 
-        const bookings = await this.repository.getAll();
+        const newBooking = filterAllowedBookingFields(bookingData);
 
-        const newId = bookings.length > 0
-            ? Math.max(...bookings.map(booking => Number(booking.id))) + 1
-            : 1;
-
-        const newBooking = {
-            id: newId,
-            clientName: bookingData.clientName,
-            clientEmail: bookingData.clientEmail,
-            date: bookingData.date,
-            time: bookingData.time,
-            status: bookingData.status,
-            services: bookingData.services ?? []
-        };
+        await this.validateExistingServices(newBooking.services);
 
         return await this.repository.create(newBooking);
     }
 
+
     // Actualizar una reserva existente
     async updateBooking(id, updatedData) {
-        const existingBooking = await this.repository.getById(id);
-
-        if (!existingBooking) {
-            return null;
-        }
 
         validateBooking(updatedData, true);
 
         const filteredData = filterAllowedBookingFields(updatedData);
+
+        await this.validateExistingServices(filteredData.services);
 
         return await this.repository.update(id, filteredData);
     }
@@ -63,28 +63,30 @@ class BookingsService {
     }
 
     // Agregar un servicio a una reserva ya existente
-    async addServiceToBooking(bookingId, service) {
+
+    async addServiceToBooking(bookingId, serviceId) {
         const booking = await this.repository.getById(bookingId);
 
         if (!booking) {
             return null;
         }
 
-        const existingCatalogService = await this.servicesRepository.getById(service.id);
+        const existingCatalogService =
+            await this.servicesRepository.getById(serviceId);
 
         if (!existingCatalogService) {
             throw new AppError("Servicio no encontrado", 404);
         }
 
         const existingService = booking.services.find(
-            item => item.service === service.id
+            item => String(item.service) === String(existingCatalogService._id)
         );
 
         if (existingService) {
             existingService.quantity += 1;
         } else {
             booking.services.push({
-                service: service.id,
+                service: existingCatalogService._id,
                 quantity: 1
             });
         }
