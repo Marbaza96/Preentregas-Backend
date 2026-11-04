@@ -1,7 +1,8 @@
 
 import ServiceModel from "./models/service.model.js";
+import ServicesRepository from "../repositories/services.repository.js";
 
-class ServicesDAO {
+class ServicesDAO extends ServicesRepository {
 
     // Obtener todos los servicios
     async getAll() {

@@ -1,12 +1,12 @@
-import BookingsRepository from "../repositories/bookings.repository.js";
+import BookingsDAO from "../dao/bookings.dao.js";
+import ServicesDAO from "../dao/services.dao.js";
 import validateBooking, { filterAllowedBookingFields } from "../validators/bookings.validator.js";
-import ServicesRepository from "../repositories/services.repository.js";
 import AppError from "../utils/AppError.js";
 
 class BookingsService {
     constructor() {
-        this.repository = new BookingsRepository();
-        this.servicesRepository = new ServicesRepository();
+        this.repository = new BookingsDAO();
+        this.servicesRepository = new ServicesDAO();
     }
 
     // Verificar que los servicios referenciados existan

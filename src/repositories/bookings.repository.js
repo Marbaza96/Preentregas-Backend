@@ -1,33 +1,23 @@
-import BookingsDAO from "../dao/bookings.dao.js";
-
 class BookingsRepository {
-    constructor() {
-        this.dao = new BookingsDAO();
-    }
 
-    // Obtener todas las reservas
     async getAll() {
-        return await this.dao.getAll();
+        throw new Error("Método getAll() no implementado");
     }
 
-    // Obtener una reserva por ID
     async getById(id) {
-        return await this.dao.getById(id);
+        throw new Error("Método getById() no implementado");
     }
 
-    // Crear una nueva reserva
     async create(booking) {
-        return await this.dao.create(booking);
+        throw new Error("Método create() no implementado");
     }
 
-    // Actualizar una reserva existente
     async update(id, updatedBooking) {
-        return await this.dao.update(id, updatedBooking);
+        throw new Error("Método update() no implementado");
     }
 
-    // Eliminar una reserva por su ID
     async delete(id) {
-        return await this.dao.delete(id);
+        throw new Error("Método delete() no implementado");
     }
 }
 

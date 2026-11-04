@@ -1,0 +1,41 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f5f6fa;
+    color: #333;
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 20px;
+}
+
+h1 {
+    color: #243b53;
+    text-align: center;
+}
+
+h2 {
+    color: #334e68;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 10px;
+}
+
+article {
+    background-color: white;
+    padding: 20px;
+    margin: 15px 0;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+}
+
+article h3 {
+    color: #243b53;
+    margin-top: 0;
+}
+
+article p {
+    margin: 8px 0;
+}
+
+hr {
+    border: none;
+    border-bottom: 1px solid #ddd;
+}

@@ -1,7 +1,8 @@
 
 import BookingModel from "./models/booking.model.js";
+import BookingsRepository from "../repositories/bookings.repository.js";
 
-class BookingsDAO {
+class BookingsDAO extends BookingsRepository {
 
     // Obtener todas las reservas
     async getAll() {

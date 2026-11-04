@@ -1,0 +1,27 @@
+<h2>Reservas registradas</h2>
+
+<div id="bookings-list">
+    {{#each bookings}}
+    <article>
+        <h3>Reserva de {{this.clientName}}</h3>
+
+        <p>Fecha: {{this.date}}</p>
+        <p>Hora: {{this.time}}</p>
+        <p>Estado: {{this.status}}</p>
+
+        <p>Servicios asociados: {{this.services.length}}</p>
+    </article>
+    <hr>
+    {{else}}
+
+    <p id="empty-message">No hay reservas registradas.</p>
+
+    {{/each}}
+
+</div>
+
+
+
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/socket.js"></script>

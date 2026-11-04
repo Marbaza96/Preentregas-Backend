@@ -1,9 +1,9 @@
-import ServicesRepository from "../repositories/services.repository.js";
+import ServicesDAO from "../dao/services.dao.js";
 import validateService, { filterAllowedFields } from "../validators/services.validator.js";
 
 class ServicesService {
     constructor() {
-        this.repository = new ServicesRepository();
+        this.repository = new ServicesDAO();
     }
 
     // Obtener servicios con filtros opcionales

@@ -1,8 +1,8 @@
 # API de Servicios y Reservas
 
-API REST desarrollada con **Node.js, Express y MongoDB Atlas**, utilizando **Mongoose** para gestionar servicios y reservas de un sistema de turnos.
+Aplicación desarrollada con **Node.js, Express y MongoDB Atlas**, utilizando **Mongoose** para gestionar servicios y reservas de un sistema de turnos.
 
-Implementa una arquitectura en capas, validaciones de datos y manejo centralizado de errores.
+Implementa una API REST con arquitectura en capas, validaciones y manejo centralizado de errores. Incorpora vistas renderizadas con **Handlebars** y comunicación en tiempo real mediante **Socket.IO**.
 
 ## Instalación y ejecución
 
@@ -40,16 +40,16 @@ La aplicación se conecta a MongoDB antes de iniciar el servidor. Opcionalmente,
 
 El proyecto organiza sus responsabilidades mediante el flujo:
 
-**Routes → Controllers → Services → Repositories → DAO → MongoDB**
+**Routes → Controllers → Services → Repositories → DAO → Models**
 
 - **Routes:** definen los endpoints y validan los identificadores.
-- **Controllers:** gestionan las solicitudes y respuestas HTTP.
+- **Controllers:** gestionan las solicitudes HTTP y renderizan las vistas.
 - **Services:** implementan la lógica de negocio.
 - **Repositories:** conectan los servicios con los DAO.
 - **DAO:** realizan las operaciones de persistencia mediante Mongoose.
 - **Models:** definen los esquemas de MongoDB.
 
-Incluye validadores de entrada, middleware global de errores y modelos independientes para `services`, `bookings` y `messages`.
+Incluye validadores, middleware global de errores, vistas Handlebars y comunicación mediante Socket.IO, manteniendo la API REST existente.
 
 ## Recursos
 
@@ -101,6 +101,25 @@ GET http://localhost:8080/api/services?category=peluqueria&available=true
 
 Al crear o actualizar reservas, se verifica que los servicios referenciados existan. Al agregar un servicio ya asociado, se incrementa su cantidad.
 
+## Vistas con Handlebars
+
+La aplicación incorpora vistas renderizadas desde el servidor utilizando datos reales de MongoDB.
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/views/services` | Visualizar el catálogo de servicios |
+| GET | `/views/availability` | Visualizar las reservas registradas |
+
+Las vistas reutilizan las capas existentes de la aplicación, sin consultas directas a la base de datos.
+
+## Comunicación en tiempo real
+
+Se utiliza **Socket.IO** para actualizar automáticamente la vista de reservas cuando se registra una nueva reserva.
+
+Al ejecutar `POST /api/bookings` y completar correctamente la creación, el servidor emite el evento `bookingCreated`.
+
+El cliente escucha este evento mediante `public/js/socket.js` y agrega la nueva reserva a la vista `/views/availability` **sin necesidad de recargar la página**.
+
 ## Ejemplos de creación
 
 **POST `/api/services`**
@@ -124,7 +143,7 @@ Al crear o actualizar reservas, se verifica que los servicios referenciados exis
   "clientEmail": "cliente@email.com",
   "date": "2026-11-10",
   "time": "10:00",
-  "status": "pendiente",
+  "status": "pending",
   "services": []
 }
 ```
@@ -152,5 +171,7 @@ Las respuestas de error siguen el formato:
 ## Pruebas
 
 Los endpoints fueron probados mediante **Postman**, verificando operaciones CRUD, filtros, validaciones de ObjectId, referencias entre servicios y reservas y manejo de errores.
+
+También se verificó el renderizado de vistas con **Handlebars** y la actualización en tiempo real mediante **Socket.IO**, creando reservas desde Postman y comprobando su aparición automática en el navegador.
 
 Los datos se almacenan en **MongoDB Atlas**, sin utilizar archivos JSON como sistema de persistencia.

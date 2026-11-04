@@ -1,5 +1,6 @@
 import BookingsService from "../services/bookings.service.js";
 import { ensureFound } from "../utils/notFound.js";
+import { getSocketIO } from "../config/socket.config.js";
 
 const bookingsService = new BookingsService();
 
@@ -34,6 +35,9 @@ export const getBookingById = async (req, res, next) => {
 export const createBooking = async (req, res, next) => {
     try {
         const createdBooking = await bookingsService.createBooking(req.body);
+
+        const io = getSocketIO();
+        io.emit("bookingCreated", createdBooking);
 
         res.status(201).json(createdBooking);
 
