@@ -120,6 +120,29 @@ Al ejecutar `POST /api/bookings` y completar correctamente la creación, el serv
 
 El cliente escucha este evento mediante `public/js/socket.js` y agrega la nueva reserva a la vista `/views/availability` **sin necesidad de recargar la página**.
 
+### Cómo probar la funcionalidad en tiempo real
+
+1. Iniciar el servidor con `npm run dev`.
+2. Abrir en el navegador `http://localhost:8080/views/availability` y mantener la página abierta.
+3. En Postman, realizar una solicitud **POST** a `http://localhost:8080/api/bookings`, seleccionando **Body → raw → JSON**.
+4. Enviar el siguiente cuerpo:
+
+```json
+{
+  "clientName": "Prueba Tiempo Real",
+  "clientEmail": "prueba@example.com",
+  "date": "2026-11-25",
+  "time": "14:30",
+  "status": "pending",
+  "services": []
+}
+```
+
+5. Verificar que Postman devuelva **201 Created**.
+6. Comprobar que la nueva reserva aparezca automáticamente en `/views/availability`, sin actualizar el navegador.
+
+Esta prueba demuestra la comunicación entre la API REST, MongoDB, Socket.IO y la vista renderizada con Handlebars.
+
 ## Ejemplos de creación
 
 **POST `/api/services`**
