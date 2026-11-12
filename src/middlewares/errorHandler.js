@@ -1,6 +1,10 @@
 // Middleware global para manejar errores
 function errorHandler(error, req, res, next) {
-    console.error("ERROR DETECTADO:", error);
+
+    if (!error.statusCode || error.statusCode >= 500) {
+        console.error("ERROR DETECTADO:", error);
+    }
+
 
     let statusCode = error.statusCode || 500;
     let message = error.message;

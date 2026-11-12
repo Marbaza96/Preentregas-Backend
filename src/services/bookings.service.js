@@ -9,7 +9,7 @@ class BookingsService {
         this.servicesRepository = new ServicesDAO();
     }
 
-    // Verificar que los servicios referenciados existan
+    // Verificar que los servicios existan y estén disponibles
     async validateExistingServices(services) {
         if (!services) return;
 
@@ -20,8 +20,13 @@ class BookingsService {
             if (!existingService) {
                 throw new AppError("Servicio no encontrado", 404);
             }
+
+            if (!existingService.available) {
+                throw new AppError("El servicio no está disponible", 400);
+            }
         }
     }
+
 
     // Obtener todas las reservas
     async getBookings() {
@@ -44,18 +49,25 @@ class BookingsService {
         return await this.repository.create(newBooking);
     }
 
-
     // Actualizar una reserva existente
     async updateBooking(id, updatedData) {
-
         validateBooking(updatedData, true);
 
         const filteredData = filterAllowedBookingFields(updatedData);
+
+        // Evitar actualizaciones sin campos permitidos
+        if (Object.keys(filteredData).length === 0) {
+            throw new AppError(
+                "Debe proporcionar al menos un campo válido para actualizar",
+                400
+            );
+        }
 
         await this.validateExistingServices(filteredData.services);
 
         return await this.repository.update(id, filteredData);
     }
+
 
     // Eliminar una reserva por ID
     async deleteBooking(id) {
@@ -65,7 +77,7 @@ class BookingsService {
     // Agregar un servicio a una reserva ya existente
 
     async addServiceToBooking(bookingId, serviceId) {
-        const booking = await this.repository.getById(bookingId);
+        const booking = await this.repository.getByIdWithoutPopulate(bookingId);
 
         if (!booking) {
             return null;
@@ -76,6 +88,10 @@ class BookingsService {
 
         if (!existingCatalogService) {
             throw new AppError("Servicio no encontrado", 404);
+        }
+
+        if (!existingCatalogService.available) {
+            throw new AppError("El servicio no está disponible", 400);
         }
 
         const existingService = booking.services.find(

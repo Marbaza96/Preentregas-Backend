@@ -1,7 +1,12 @@
 class ServicesRepository {
 
-    async getAll() {
+
+    async getAll(category, available) {
         throw new Error("Método getAll() no implementado");
+    }
+
+    async getPaginated(filters) {
+        throw new Error("Método getPaginated() no implementado");
     }
 
     async getById(id) {

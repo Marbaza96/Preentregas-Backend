@@ -1,50 +1,37 @@
+
+import { z } from "zod";
 import AppError from "../utils/AppError.js";
+
+// Esquema de validación de servicios
+const serviceSchema = z.object({
+    name: z.string().trim().min(1),
+    description: z.string().trim().min(1),
+    duration: z.number().min(1),
+    price: z.number().min(0),
+    category: z.string().trim().min(1),
+    available: z.boolean()
+});
 
 // Validar los datos de un servicio
 function validateService(serviceData, isUpdate = false) {
+    const schema = isUpdate
+        ? serviceSchema.partial()
+        : serviceSchema;
 
-    if (
-        !serviceData ||
-        typeof serviceData !== "object" ||
-        Array.isArray(serviceData)
-    ) {
-        throw new AppError("Los datos del servicio deben ser un objeto válido", 400);
-    }
+    const result = schema.safeParse(serviceData);
 
-    const {
-        name,
-        description,
-        duration,
-        price,
-        category,
-        available
-    } = serviceData;
+    if (!result.success) {
+        const errors = result.error.issues.map((issue) => {
+            const field = issue.path.join(".") || "datos";
+            return `${field}: ${issue.message}`;
+        });
 
-    if (
-        !isUpdate && (
-            !name ||
-            !description ||
-            duration === undefined ||
-            price === undefined ||
-            !category ||
-            available === undefined
-        )
-    ) {
-        throw new AppError("Todos los campos del servicio son obligatorios", 400);
-    }
-
-    if (
-        (name !== undefined && (typeof name !== "string" || !name.trim())) ||
-        (description !== undefined && (typeof description !== "string" || !description.trim())) ||
-        (duration !== undefined && (typeof duration !== "number" || !Number.isFinite(duration) || duration < 1)) ||
-        (price !== undefined && (typeof price !== "number" || !Number.isFinite(price) || price < 0)) ||
-        (category !== undefined && (typeof category !== "string" || !category.trim())) ||
-        (available !== undefined && typeof available !== "boolean")
-    ) {
-        throw new AppError("Los datos del servicio contienen valores inválidos", 400);
+        throw new AppError(
+            `Datos inválidos: ${errors.join("; ")}`,
+            400
+        );
     }
 }
-
 
 // Conservar únicamente los campos permitidos
 function filterAllowedFields(data) {

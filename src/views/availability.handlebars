@@ -1,8 +1,66 @@
+<h2>Crear nueva reserva</h2>
+
+<form id="booking-form">
+    <div>
+        <label for="clientName">Nombre del cliente:</label>
+        <input type="text" id="clientName" name="clientName" required>
+    </div>
+
+    <div>
+        <label for="clientEmail">Correo electrónico:</label>
+        <input type="email" id="clientEmail" name="clientEmail" required>
+    </div>
+
+    <div>
+        <label for="date">Fecha:</label>
+        <input type="date" id="date" name="date" required>
+    </div>
+
+    <div>
+        <label for="time">Hora:</label>
+        <input type="time" id="time" name="time" required>
+    </div>
+
+    <div>
+        <label for="status">Estado:</label>
+        <select id="status" name="status" required>
+            <option value="pendiente">Pendiente</option>
+            <option value="confirmada">Confirmada</option>
+            <option value="cancelada">Cancelada</option>
+        </select>
+    </div>
+
+
+    <div>
+        <label for="service">Servicio:</label>
+        <select id="service" name="service">
+            <option value="">Sin servicio asociado</option>
+
+            {{#each services}}
+            <option value="{{this._id}}">
+                {{this.name}}
+            </option>
+            {{/each}}
+        </select>
+    </div>
+
+    <div>
+        <label for="quantity">Cantidad:</label>
+        <input type="number" id="quantity" name="quantity" min="1" step="1" value="1" required>
+    </div>
+
+    <button type="submit">Crear reserva</button>
+</form>
+
+<p id="booking-message" role="status" aria-live="polite"></p>
+
+<hr>
+
 <h2>Reservas registradas</h2>
 
 <div id="bookings-list">
     {{#each bookings}}
-    <article>
+    <article data-booking-id="{{this._id}}">
         <h3>Reserva de {{this.clientName}}</h3>
 
         <p>Fecha: {{this.date}}</p>
@@ -13,15 +71,9 @@
     </article>
     <hr>
     {{else}}
-
     <p id="empty-message">No hay reservas registradas.</p>
-
     {{/each}}
-
 </div>
-
-
-
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/socket.js"></script>

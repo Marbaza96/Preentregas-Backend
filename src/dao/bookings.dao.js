@@ -9,8 +9,15 @@ class BookingsDAO extends BookingsRepository {
         return await BookingModel.find().lean();
     }
 
-    // Obtener una reserva por ID
+    // Obtener una reserva por ID con sus servicios completos
     async getById(id) {
+        return await BookingModel.findById(id)
+            .populate("services.service")
+            .lean();
+    }
+
+    // Obtener una reserva sin populate
+    async getByIdWithoutPopulate(id) {
         return await BookingModel.findById(id).lean();
     }
 

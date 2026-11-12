@@ -1,32 +1,115 @@
 import ServicesService from "../services/services.service.js";
 import AppError from "../utils/AppError.js";
 import { ensureFound } from "../utils/notFound.js";
+import {
+    emitServiceCreated,
+    emitServiceUpdated,
+    emitServiceDeleted
+} from "../events/service.events.js";
 
 const servicesService = new ServicesService();
 
-// Obtener todos los servicios con filtros opcionales
+// Obtener servicios con filtros, paginación y ordenamiento
 export const getServices = async (req, res, next) => {
     try {
-        const { category, available } = req.query;
+        const {
+            category,
+            available,
+            page = "1",
+            limit = "10",
+            sortBy = "price",
+            order = "asc"
+        } = req.query;
 
+        // Validar disponibilidad
         if (
             available !== undefined &&
             available !== "true" &&
             available !== "false"
         ) {
-            throw new AppError("El filtro available debe ser true o false", 400);
+            throw new AppError(
+                "El filtro available debe ser true o false",
+                400
+            );
         }
 
-        const availableBoolean = available !== undefined
-            ? available === "true"
-            : undefined;
+        // Validar paginación
+        const pageNumber = Number(page);
+        const limitNumber = Number(limit);
 
-        const services = await servicesService.getServices(
+        if (
+            !Number.isSafeInteger(pageNumber) ||
+            pageNumber < 1 ||
+            !Number.isSafeInteger(limitNumber) ||
+            limitNumber < 1 ||
+            limitNumber > 100
+        ) {
+            throw new AppError(
+                "page debe ser un entero positivo y limit debe estar entre 1 y 100",
+                400
+            );
+        }
+
+        // Validar ordenamiento
+        const allowedSortFields = [
+            "name",
+            "duration",
+            "price",
+            "category"
+        ];
+
+        if (!allowedSortFields.includes(sortBy)) {
+            throw new AppError(
+                "El campo sortBy no es válido",
+                400
+            );
+        }
+
+        if (!["asc", "desc"].includes(order)) {
+            throw new AppError(
+                "order debe ser asc o desc",
+                400
+            );
+        }
+
+        // Consultar MongoDB
+        const result = await servicesService.getPaginatedServices({
             category,
-            availableBoolean
-        );
+            available: available === undefined
+                ? undefined
+                : available === "true",
+            page: pageNumber,
+            limit: limitNumber,
+            sortBy,
+            order
+        });
 
-        res.status(200).json(services);
+        // Construir enlaces conservando los filtros
+        const buildLink = (targetPage) => {
+            const params = new URLSearchParams();
+
+            if (category) params.set("category", category);
+            if (available !== undefined) {
+                params.set("available", available);
+            }
+
+            params.set("page", String(targetPage));
+            params.set("limit", String(limitNumber));
+            params.set("sortBy", sortBy);
+            params.set("order", order);
+
+            return `/api/services?${params.toString()}`;
+        };
+
+        res.status(200).json({
+            ...result,
+            prevLink: result.hasPrevPage
+                ? buildLink(result.prevPage)
+                : null,
+            nextLink: result.hasNextPage
+                ? buildLink(result.nextPage)
+                : null
+        });
 
     } catch (error) {
         next(error);
@@ -54,6 +137,8 @@ export const createService = async (req, res, next) => {
     try {
         const createdService = await servicesService.addService(req.body);
 
+        emitServiceCreated(createdService);
+
         res.status(201).json(createdService);
 
     } catch (error) {
@@ -73,6 +158,8 @@ export const updateService = async (req, res, next) => {
 
         ensureFound(updatedService, "Servicio no encontrado");
 
+        emitServiceUpdated(updatedService);
+
         res.status(200).json(updatedService);
 
     } catch (error) {
@@ -88,6 +175,8 @@ export const deleteService = async (req, res, next) => {
         const deletedService = await servicesService.deleteService(id);
 
         ensureFound(deletedService, "Servicio no encontrado");
+
+        emitServiceDeleted(deletedService);
 
         res.status(200).json(deletedService);
 

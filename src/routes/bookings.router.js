@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { getBookings, getBookingById, createBooking, addServiceToBooking, updateBooking, deleteBooking } from "../controllers/bookings.controller.js";
 import { validateObjectId } from "../middlewares/validateObjectId.js";
+import { validateAddServiceParams } from "../validators/bookings.validator.js";
 
 const router = Router();
 
@@ -14,7 +15,18 @@ router.get("/:bid", validateObjectId("bid"), getBookingById);
 router.post("/", createBooking);
 
 // Agregar un servicio a una reserva
-router.post("/:bid/services/:sid", validateObjectId("bid", "sid"), addServiceToBooking);
+router.post(
+    "/:bid/services/:sid",
+    (req, res, next) => {
+        try {
+            validateAddServiceParams(req.params);
+            next();
+        } catch (error) {
+            next(error);
+        }
+    },
+    addServiceToBooking
+);
 
 // Actualizar una reserva
 router.put("/:bid", validateObjectId("bid"), updateBooking);

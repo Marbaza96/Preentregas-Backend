@@ -8,6 +8,12 @@ class BookingsRepository {
         throw new Error("Método getById() no implementado");
     }
 
+
+    async getByIdWithoutPopulate(id) {
+        throw new Error("Método getByIdWithoutPopulate() no implementado");
+    }
+
+
     async create(booking) {
         throw new Error("Método create() no implementado");
     }

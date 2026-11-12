@@ -18,9 +18,15 @@ export const renderServices = async (req, res, next) => {
 // Renderizar la vista de reservas
 export const renderAvailability = async (req, res, next) => {
     try {
-        const bookings = await bookingsService.getBookings();
+        const [bookings, services] = await Promise.all([
+            bookingsService.getBookings(),
+            servicesService.getServices(undefined, true)
+        ]);
 
-        res.render("availability", { bookings });
+        res.render("availability", {
+            bookings,
+            services
+        });
     } catch (error) {
         next(error);
     }

@@ -1,7 +1,9 @@
-<h2>Servicios disponibles</h2>
 
-{{#each services}}
-    <article>
+<h2>Catálogo de servicios</h2>
+
+<div id="services-list">
+    {{#each services}}
+    <article data-service-id="{{this._id}}">
         <h3>{{this.name}}</h3>
         <p>Descripción: {{this.description}}</p>
         <p>Duración: {{this.duration}} minutos</p>
@@ -12,6 +14,10 @@
         </p>
     </article>
     <hr>
-{{else}}
-    <p>No hay servicios disponibles.</p>
-{{/each}}
+    {{else}}
+    <p id="services-empty-message">No hay servicios registrados.</p>
+    {{/each}}
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/services.socket.js"></script>

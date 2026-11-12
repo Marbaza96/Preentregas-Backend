@@ -13,21 +13,39 @@ const bookingSchema = new mongoose.Schema(
             required: true,
             trim: true
         },
+
         date: {
             type: String,
             required: true,
-            trim: true
+            trim: true,
+            validate: {
+                validator: (value) => {
+                    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+
+                    const parsedDate = new Date(`${value}T00:00:00Z`);
+
+                    return !Number.isNaN(parsedDate.getTime()) &&
+                        parsedDate.toISOString().slice(0, 10) === value;
+                },
+                message: "La fecha debe ser válida y tener el formato YYYY-MM-DD"
+            }
         },
         time: {
             type: String,
             required: true,
-            trim: true
+            trim: true,
+            match: [
+                /^([01]\d|2[0-3]):[0-5]\d$/,
+                "La hora debe tener el formato HH:mm"
+            ]
         },
         status: {
             type: String,
             required: true,
-            trim: true
+            trim: true,
+            enum: ["pendiente", "confirmada", "cancelada"]
         },
+
         services: [
             {
                 service: {

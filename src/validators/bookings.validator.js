@@ -1,103 +1,95 @@
+import { z } from "zod";
+import mongoose from "mongoose";
 import AppError from "../utils/AppError.js";
-import { validateId } from "./id.validator.js";
 
-// Validar los datos de una reserva
-function validateBooking(bookingData, isUpdate = false) {
 
-    if (
-        !bookingData ||
-        typeof bookingData !== "object" ||
-        Array.isArray(bookingData)
-    ) {
-        throw new AppError("Los datos de la reserva deben ser un objeto válido", 400);
-    }
+// Formatos permitidos para fecha y hora
+const dateSchema = z.iso.date();
 
-    const {
-        clientName,
-        clientEmail,
-        date,
-        time,
-        status,
-        services
-    } = bookingData;
+const timeSchema = z.string().regex(
+    /^([01]\d|2[0-3]):[0-5]\d$/,
+    "La hora debe tener el formato HH:mm"
+);
 
-    if (
-        !isUpdate && (
-            !clientName ||
-            !clientEmail ||
-            !date ||
-            !time ||
-            !status
-        )
-    ) {
+// Estados permitidos
+const statusSchema = z.enum([
+    "pendiente",
+    "confirmada",
+    "cancelada"
+]);
+
+// Esquema de validación de los servicios asociados
+const bookingServiceSchema = z.object({
+    service: z.string().refine(
+        (id) => mongoose.isObjectIdOrHexString(id),
+        { message: "ID de servicio inválido" }
+    ),
+    quantity: z.number().int().min(1)
+});
+
+
+// Validar los identificadores al agregar un servicio a una reserva
+const addServiceParamsSchema = z.object({
+    bid: z.string().refine(
+        (id) => mongoose.isObjectIdOrHexString(id),
+        { message: "ID de reserva inválido" }
+    ),
+    sid: z.string().refine(
+        (id) => mongoose.isObjectIdOrHexString(id),
+        { message: "ID de servicio inválido" }
+    )
+});
+
+export function validateAddServiceParams(params) {
+    const result = addServiceParamsSchema.safeParse(params);
+
+    if (!result.success) {
+        const errors = result.error.issues.map((issue) => {
+            const field = issue.path.join(".") || "datos";
+            return `${field}: ${issue.message}`;
+        });
+
         throw new AppError(
-            "Todos los campos obligatorios de la reserva deben completarse",
+            `Datos inválidos: ${errors.join("; ")}`,
             400
         );
-    }
-
-    if (
-        (clientName !== undefined &&
-            (typeof clientName !== "string" || !clientName.trim())) ||
-        (clientEmail !== undefined &&
-            (typeof clientEmail !== "string" || !clientEmail.trim())) ||
-        (date !== undefined &&
-            (typeof date !== "string" || !date.trim())) ||
-        (time !== undefined &&
-            (typeof time !== "string" || !time.trim())) ||
-        (status !== undefined &&
-            (typeof status !== "string" || !status.trim()))
-    ) {
-        throw new AppError(
-            "Los datos de la reserva contienen valores inválidos",
-            400
-        );
-    }
-
-    // Validar formato del correo electrónico
-    if (
-        clientEmail !== undefined &&
-        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail)
-    ) {
-        throw new AppError(
-            "El correo electrónico no tiene un formato válido",
-            400
-        );
-    }
-
-    // Validar que services sea un arreglo
-    if (services !== undefined && !Array.isArray(services)) {
-        throw new AppError(
-            "Los servicios de la reserva deben ser un arreglo",
-            400
-        );
-    }
-
-
-    // Validar los elementos del arreglo de servicios
-    if (Array.isArray(services)) {
-        for (const item of services) {
-            if (
-                !item ||
-                typeof item !== "object" ||
-                Array.isArray(item) ||
-                !Number.isInteger(item.quantity) ||
-                item.quantity <= 0
-            ) {
-                throw new AppError(
-                    "Los servicios de la reserva contienen datos inválidos",
-                    400
-                );
-            }
-
-            validateId(item.service);
-
-        }
     }
 }
 
 
-// Filtrar los campos permitidos de una reserva
+// Esquema de validación de reservas
+const bookingSchema = z.object({
+    clientName: z.string().trim().min(1),
+    clientEmail: z.email(),
+    date: dateSchema,
+    time: timeSchema,
+    status: statusSchema,
+    services: z.array(bookingServiceSchema).optional()
+});
+
+// Validar los datos de una reserva
+function validateBooking(bookingData, isUpdate = false) {
+    const schema = isUpdate
+        ? bookingSchema.partial()
+        : bookingSchema;
+
+    const result = schema.safeParse(bookingData);
+
+    if (!result.success) {
+        const errors = result.error.issues.map((issue) => {
+            const field = issue.path.join(".") || "datos";
+            return `${field}: ${issue.message}`;
+        });
+
+        throw new AppError(
+            `Datos inválidos: ${errors.join("; ")}`,
+            400
+        );
+    }
+}
+
+
+// Conservar únicamente los campos permitidos
 export function filterAllowedBookingFields(data) {
     const allowedFields = [
         "clientName",
@@ -109,8 +101,8 @@ export function filterAllowedBookingFields(data) {
     ];
 
     return Object.fromEntries(
-        Object.entries(data).filter(([key]) =>
-            allowedFields.includes(key)
+        Object.entries(data).filter(
+            ([key]) => allowedFields.includes(key)
         )
     );
 }
