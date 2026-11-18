@@ -70,3 +70,84 @@ nav a:focus-visible {
     outline: 2px solid #334e68;
     outline-offset: 2px;
 }
+
+/* Formulario de creación de reservas */
+
+#booking-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 24px;
+    background-color: white;
+    padding: 28px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+    margin: 20px 0;
+}
+
+#booking-form>div {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+#booking-form label {
+    font-size: 14px;
+    font-weight: bold;
+    color: #334e68;
+}
+
+#booking-form input,
+#booking-form select {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background-color: white;
+    color: #333;
+    font-size: 15px;
+}
+
+#booking-form input:focus,
+#booking-form select:focus {
+    outline: 2px solid #334e68;
+    outline-offset: 1px;
+}
+
+#booking-form button {
+    grid-column: 1 / -1;
+    justify-self: start;
+    background-color: #334e68;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 14px 32px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+#booking-form button:hover {
+    background-color: #243b53;
+}
+
+#booking-form button:focus-visible {
+    outline: 2px solid #243b53;
+    outline-offset: 3px;
+}
+
+/* Adaptación a pantallas pequeñas */
+
+@media (max-width: 600px) {
+    #booking-form {
+        grid-template-columns: 1fr;
+        padding: 20px;
+    }
+
+    #booking-form button {
+        width: 100%;
+    }
+}

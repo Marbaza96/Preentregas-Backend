@@ -1,6 +1,10 @@
 import BookingsService from "../services/bookings.service.js";
 import { ensureFound } from "../utils/notFound.js";
-import { emitBookingCreated } from "../events/booking.events.js";
+import {
+    emitBookingCreated,
+    emitBookingUpdated,
+    emitBookingDeleted
+} from "../events/booking.events.js";
 
 const bookingsService = new BookingsService();
 
@@ -58,6 +62,8 @@ export const addServiceToBooking = async (req, res, next) => {
 
         ensureFound(updatedBooking, "Reserva no encontrada");
 
+        emitBookingUpdated(updatedBooking);
+
         res.status(200).json(updatedBooking);
 
     } catch (error) {
@@ -78,6 +84,8 @@ export const updateBooking = async (req, res, next) => {
 
         ensureFound(updatedBooking, "Reserva no encontrada");
 
+        emitBookingUpdated(updatedBooking);
+        
         res.status(200).json(updatedBooking);
 
     } catch (error) {
@@ -93,6 +101,8 @@ export const deleteBooking = async (req, res, next) => {
         const deletedBooking = await bookingsService.deleteBooking(bookingId);
 
         ensureFound(deletedBooking, "Reserva no encontrada");
+
+        emitBookingDeleted(bookingId);
 
         res.status(200).json(deletedBooking);
 

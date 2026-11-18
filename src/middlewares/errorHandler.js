@@ -1,11 +1,6 @@
 // Middleware global para manejar errores
 function errorHandler(error, req, res, next) {
 
-    if (!error.statusCode || error.statusCode >= 500) {
-        console.error("ERROR DETECTADO:", error);
-    }
-
-
     let statusCode = error.statusCode || 500;
     let message = error.message;
 
@@ -21,9 +16,20 @@ function errorHandler(error, req, res, next) {
         message = "El formato de los datos es inválido";
     }
 
+    // Errores de clave duplicada de MongoDB
+    if (error.code === 11000) {
+        statusCode = 409;
+        message = "Ya existe un registro con esos datos";
+    }
+
     // Evitar detalles internos del servidor
     if (statusCode === 500) {
         message = "Error interno del servidor";
+    }
+
+    // Registrar errores internos
+    if (statusCode >= 500) {
+        console.error("ERROR DETECTADO:", error);
     }
 
     res.status(statusCode).json({

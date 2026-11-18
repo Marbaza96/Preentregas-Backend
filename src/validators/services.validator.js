@@ -6,11 +6,11 @@ import AppError from "../utils/AppError.js";
 const serviceSchema = z.object({
     name: z.string().trim().min(1),
     description: z.string().trim().min(1),
-    duration: z.number().min(1),
+    duration: z.number().int().min(1),
     price: z.number().min(0),
     category: z.string().trim().min(1),
-    available: z.boolean()
-});
+        available: z.boolean()
+}).strict();
 
 // Validar los datos de un servicio
 function validateService(serviceData, isUpdate = false) {

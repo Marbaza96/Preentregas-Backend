@@ -1,11 +1,13 @@
 import ServicesDAO from "../dao/services.dao.js";
 import validateService, { filterAllowedFields } from "../validators/services.validator.js";
 import AppError from "../utils/AppError.js";
+import BookingsDAO from "../dao/bookings.dao.js";
 
 
 class ServicesService {
     constructor() {
         this.repository = new ServicesDAO();
+        this.bookingsRepository = new BookingsDAO();
     }
 
 
@@ -48,14 +50,42 @@ class ServicesService {
             );
         }
 
+        // Proteger la duración de servicios con reservas confirmadas
+        if (filteredData.duration !== undefined) {
+            const currentService = await this.repository.getById(id);
+
+            if (currentService && currentService.duration !== filteredData.duration) {
+                const hasConfirmedBookings =
+                    await this.bookingsRepository.hasConfirmedBookingsForService(id);
+
+                if (hasConfirmedBookings) {
+                    throw new AppError(
+                        "No se puede modificar la duración de un servicio con reservas confirmadas",
+                        409
+                    );
+                }
+            }
+        }
+
         return await this.repository.update(id, filteredData);
     }
 
-
     // Eliminar un servicio existente
     async deleteService(id) {
+        const hasBookings =
+            await this.bookingsRepository.hasBookingsForService(id);
+
+        if (hasBookings) {
+            throw new AppError(
+                "No se puede eliminar un servicio asociado a reservas existentes",
+                409
+            );
+        }
+
         return await this.repository.delete(id);
     }
+
+
 }
 
 export default ServicesService;

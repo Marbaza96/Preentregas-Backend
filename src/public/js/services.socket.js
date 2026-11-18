@@ -64,7 +64,12 @@ socket.on("serviceCreated", (service) => {
 socket.on("serviceUpdated", (service) => {
     const existingService = findService(service._id);
 
-    if (!existingService) return;
+    if (!existingService) {
+        servicesList.appendChild(createServiceElement(service));
+        servicesList.appendChild(document.createElement("hr"));
+        updateEmptyMessage();
+        return;
+    }
 
     const updatedService = createServiceElement(service);
     existingService.replaceWith(updatedService);

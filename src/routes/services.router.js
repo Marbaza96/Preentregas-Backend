@@ -7,7 +7,6 @@ const router = Router();
 // Obtener todos los servicios con filtros opcionales
 router.get("/", getServices);
 
-
 // Servicio por ID
 router.get("/:id", validateObjectId("id"), getServiceById);
 

@@ -7,6 +7,7 @@ import { Server } from "socket.io";
 import { setSocketIO } from "./config/socket.config.js";
 import BookingsService from "./services/bookings.service.js";
 import { emitBookingCreated } from "./events/booking.events.js";
+import BookingSlotModel from "./dao/models/bookingSlot.model.js";
 
 const httpServer = createServer(app);
 const io = new Server(httpServer);
@@ -59,9 +60,24 @@ io.on("connection", (socket) => {
 const startServer = async () => {
     await connectDB();
 
+    // Verificar que los índices de bloques horarios estén creados
+    try {
+        await BookingSlotModel.init();
+        console.log("Índices de bloques horarios inicializados");
+    } catch (error) {
+        console.error(
+            "Error al inicializar los índices de bloques horarios:",
+            error
+        );
+        process.exit(1);
+    }
+
     httpServer.listen(PORT, () => {
         console.log(`Servidor escuchando en el puerto ${PORT}`);
     });
 };
 
-startServer();
+startServer().catch((error) => {
+    console.error("Error al iniciar el servidor:", error);
+    process.exit(1);
+});

@@ -7,8 +7,8 @@ import AppError from "../utils/AppError.js";
 const dateSchema = z.iso.date();
 
 const timeSchema = z.string().regex(
-    /^([01]\d|2[0-3]):[0-5]\d$/,
-    "La hora debe tener el formato HH:mm"
+    /^([01]\d|2[0-3]):[0-5][05]$/,
+    "La hora debe tener el formato HH:mm y respetar intervalos de 5 minutos"
 );
 
 // Estados permitidos
@@ -25,7 +25,7 @@ const bookingServiceSchema = z.object({
         { message: "ID de servicio inválido" }
     ),
     quantity: z.number().int().min(1)
-});
+}).strict();
 
 
 // Validar los identificadores al agregar un servicio a una reserva
@@ -56,7 +56,6 @@ export function validateAddServiceParams(params) {
     }
 }
 
-
 // Esquema de validación de reservas
 const bookingSchema = z.object({
     clientName: z.string().trim().min(1),
@@ -65,7 +64,7 @@ const bookingSchema = z.object({
     time: timeSchema,
     status: statusSchema,
     services: z.array(bookingServiceSchema).optional()
-});
+}).strict();
 
 // Validar los datos de una reserva
 function validateBooking(bookingData, isUpdate = false) {
@@ -87,7 +86,6 @@ function validateBooking(bookingData, isUpdate = false) {
         );
     }
 }
-
 
 // Conservar únicamente los campos permitidos
 export function filterAllowedBookingFields(data) {

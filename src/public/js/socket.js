@@ -56,13 +56,84 @@ socket.on("bookingCreated", (booking) => {
     bookingsList.append(article, document.createElement("hr"));
 });
 
+// Actualizar una reserva existente en el listado
+socket.on("bookingUpdated", (booking) => {
+    const article = Array.from(
+        document.querySelectorAll("#bookings-list [data-booking-id]")
+    ).find((element) =>
+        element.dataset.bookingId === String(booking._id)
+    );
+
+    if (!article) return;
+
+    const fields = article.querySelectorAll("p");
+
+    if (fields.length < 4) return;
+
+    const title = article.querySelector("h3");
+    if (title) title.textContent = `Reserva de ${booking.clientName}`;
+
+    fields[0].textContent = `Fecha: ${booking.date}`;
+    fields[1].textContent = `Hora: ${booking.time}`;
+    fields[2].textContent = `Estado: ${booking.status}`;
+    fields[3].textContent =
+        `Servicios asociados: ${booking.services.length}`;
+});
+
+// Eliminar una reserva del listado
+socket.on("bookingDeleted", (bookingId) => {
+    const bookingsList = document.getElementById("bookings-list");
+
+    if (!bookingsList) return;
+
+    const article = Array.from(
+        bookingsList.querySelectorAll("[data-booking-id]")
+    ).find((element) =>
+        element.dataset.bookingId === String(bookingId)
+    );
+
+    if (!article) return;
+
+    // Eliminar también el separador asociado
+    if (article.nextElementSibling?.tagName === "HR") {
+        article.nextElementSibling.remove();
+    }
+
+    article.remove();
+
+    // Restaurar el mensaje cuando no quedan reservas
+    if (!bookingsList.querySelector("[data-booking-id]")) {
+        const message = document.createElement("p");
+        message.id = "empty-message";
+        message.textContent = "No hay reservas registradas.";
+
+        bookingsList.appendChild(message);
+    }
+});
 
 const bookingForm = document.getElementById("booking-form");
 const bookingMessage = document.getElementById("booking-message");
+const bookingStatus = document.getElementById("status");
+const bookingService = document.getElementById("service");
+
+if (bookingStatus && bookingService) {
+    const syncServiceRequired = () => {
+        bookingService.required = bookingStatus.value === "confirmada";
+    };
+
+    bookingStatus.addEventListener("change", syncServiceRequired);
+    syncServiceRequired();
+}
 
 if (bookingForm) {
+
+    let isSubmitting = false;
+
     bookingForm.addEventListener("submit", (event) => {
         event.preventDefault();
+
+        if (isSubmitting) return;
+        isSubmitting = true;
 
         const formData = new FormData(bookingForm);
 
@@ -88,6 +159,8 @@ if (bookingForm) {
             "createBooking",
             bookingData,
             (error, response) => {
+                isSubmitting = false;
+
                 if (error) {
                     bookingMessage.textContent =
                         "No se recibió respuesta del servidor. Verificá la conexión.";
@@ -99,6 +172,7 @@ if (bookingForm) {
                         "Reserva creada correctamente.";
 
                     bookingForm.reset();
+                    bookingService.required = false;
                 } else {
                     bookingMessage.textContent =
                         response?.message || "No se pudo crear la reserva.";
@@ -125,7 +199,14 @@ const syncServiceOption = (service) => {
 
     // Quitar servicios que ya no están disponibles
     if (!service.available) {
+        const wasSelected = serviceSelect.value === String(service._id);
+
         existingOption?.remove();
+
+        if (wasSelected) {
+            serviceSelect.value = "";
+        }
+
         return;
     }
 

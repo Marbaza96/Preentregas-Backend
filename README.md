@@ -2,7 +2,7 @@
 
 Aplicación desarrollada con **Node.js, Express y MongoDB Atlas**, utilizando **Mongoose** para gestionar servicios y reservas de un sistema de turnos.
 
-Implementa una API REST con arquitectura en capas, validaciones mediante **Zod** y manejo centralizado de errores. Incorpora vistas con **Handlebars** y comunicación en tiempo real mediante **Socket.IO**.
+Implementa una API REST con arquitectura en capas, validaciones mediante **Zod**, manejo centralizado de errores y prevención de reservas superpuestas. Incorpora vistas con **Handlebars** y comunicación en tiempo real mediante **Socket.IO**.
 
 ## Instalación y ejecución
 
@@ -34,7 +34,9 @@ Para desarrollo:
 npm run dev
 ```
 
-La aplicación se conecta a MongoDB antes de iniciar el servidor. Opcionalmente, puede configurarse `DNS_SERVER` si el entorno requiere un servidor DNS alternativo.
+La aplicación se conecta a MongoDB e inicializa los índices de bloques horarios antes de iniciar el servidor.
+
+Opcionalmente, puede configurarse `DNS_SERVER` si el entorno requiere un servidor DNS alternativo.
 
 ## Arquitectura
 
@@ -44,13 +46,13 @@ El proyecto organiza sus responsabilidades mediante el flujo:
 
 - **Routes:** definen los endpoints y aplican validaciones de identificadores.
 - **Controllers:** gestionan las solicitudes y respuestas HTTP.
-- **Services:** implementan la lógica de negocio y ejecutan las validaciones.
+- **Services:** implementan la lógica de negocio y las validaciones.
 - **Repositories:** establecen la interfaz entre servicios y DAO.
 - **DAO:** realizan las operaciones de persistencia mediante Mongoose.
 - **Models:** definen los esquemas de MongoDB.
 - **Validators:** contienen los esquemas de validación con Zod.
 
-Se incluyen middlewares para el manejo centralizado de errores, vistas Handlebars y eventos Socket.IO.
+También se incluyen middlewares para el manejo centralizado de errores, vistas Handlebars y eventos Socket.IO.
 
 ## Recursos
 
@@ -64,7 +66,7 @@ Los estados permitidos para las reservas son:
 - `confirmada`
 - `cancelada`
 
-Cada elemento del arreglo `services` de una reserva contiene:
+Cada elemento del arreglo `services` contiene:
 
 ```json
 {
@@ -74,6 +76,8 @@ Cada elemento del arreglo `services` de una reserva contiene:
 ```
 
 MongoDB genera automáticamente los identificadores `_id` de los documentos.
+
+El sistema utiliza además una colección de bloques horarios para controlar la disponibilidad de las reservas confirmadas.
 
 ## Endpoints
 
@@ -87,18 +91,18 @@ MongoDB genera automáticamente los identificadores `_id` de los documentos.
 | PUT | `/api/services/:id` | Actualizar servicio |
 | DELETE | `/api/services/:id` | Eliminar servicio |
 
-#### Filtros, paginación y ordenamiento
+### Filtros, paginación y ordenamiento
 
 El endpoint `GET /api/services` admite los siguientes parámetros opcionales:
 
-| Parámetro | Descripción | Valor predeterminado |
+| Parámetro | Descripción | Predeterminado |
 |---|---|---|
 | `category` | Filtrar por categoría | Sin filtro |
-| `available` | Filtrar por disponibilidad (`true` o `false`) | Sin filtro |
+| `available` | Disponibilidad (`true` o `false`) | Sin filtro |
 | `page` | Número de página, entero positivo | `1` |
 | `limit` | Resultados por página, entre 1 y 100 | `10` |
-| `sortBy` | Campo de ordenamiento: `name`, `duration`, `price` o `category` | `price` |
-| `order` | Orden ascendente (`asc`) o descendente (`desc`) | `asc` |
+| `sortBy` | `name`, `duration`, `price` o `category` | `price` |
+| `order` | `asc` o `desc` | `asc` |
 
 Ejemplo:
 
@@ -125,7 +129,7 @@ La respuesta incluye los servicios encontrados y metadatos de paginación:
 }
 ```
 
-Este ejemplo representa una búsqueda sin resultados. Los metadatos se calculan dinámicamente según los filtros y los documentos disponibles.
+Este ejemplo representa una búsqueda sin resultados. Los metadatos se calculan dinámicamente según los filtros y documentos disponibles.
 
 Los parámetros inválidos generan una respuesta HTTP `400`.
 
@@ -142,9 +146,9 @@ Los parámetros inválidos generan una respuesta HTTP `400`.
 
 Al crear o actualizar reservas, se verifica que los servicios referenciados existan y estén disponibles.
 
-Al agregar un servicio que ya está asociado a una reserva, se incrementa su propiedad `quantity`.
+Si se agrega un servicio que ya está asociado a una reserva, se incrementa su propiedad `quantity`.
 
-El endpoint `GET /api/bookings/:bid` utiliza **`populate()` de Mongoose** para devolver la información de los servicios asociados, además de sus cantidades.
+Las consultas de reservas utilizan **`populate()` de Mongoose** para recuperar la información de los servicios asociados y sus cantidades.
 
 ## Validaciones con Zod
 
@@ -152,21 +156,45 @@ Se utilizan esquemas de **Zod** para validar los datos antes de realizar operaci
 
 Las validaciones incluyen:
 
-- Creación y actualización de servicios.
-- Creación y actualización de reservas.
+- Creación y actualización de servicios y reservas.
+- Campos obligatorios y tipos de datos.
 - Formato de correo electrónico, fecha y hora.
 - Estados permitidos para las reservas.
 - Identificadores de servicios asociados.
 - Cantidades enteras positivas.
-- Parámetros `bid` y `sid` al agregar servicios a una reserva.
+- Validación de identificadores en los endpoints.
 
-Las actualizaciones parciales permiten modificar campos individuales, pero rechazan solicitudes sin campos válidos para actualizar.
+Las actualizaciones parciales permiten modificar campos individuales, pero rechazan solicitudes sin campos válidos.
 
 Los datos inválidos generan respuestas HTTP `400` con mensajes descriptivos.
 
+## Control de disponibilidad y prevención de overbooking
+
+El sistema incorpora un mecanismo para evitar reservas confirmadas en horarios superpuestos.
+
+Su funcionamiento incluye:
+
+- Cálculo de la duración total según los servicios asociados y sus cantidades.
+- División del intervalo ocupado en bloques de 5 minutos.
+- Verificación de disponibilidad antes de confirmar una reserva.
+- Transacciones de MongoDB para mantener la consistencia entre reservas y bloques horarios.
+- Índice único compuesto por fecha y hora para evitar conflictos ante solicitudes simultáneas.
+- Actualización o liberación de bloques al modificar, cancelar o eliminar reservas.
+
+Las reservas **pendientes y canceladas no bloquean horarios**.
+
+Cuando una reserva confirmada se superpone con otra, el sistema rechaza la operación con HTTP `409 Conflict`.
+
+Además, se protege la integridad de los servicios:
+
+- No se permite modificar la duración de un servicio con reservas confirmadas.
+- No se permite eliminar servicios asociados a reservas existentes.
+
+Este mecanismo fue verificado mediante pruebas de superposición y solicitudes concurrentes.
+
 ## Ejemplos de creación
 
-**POST `/api/services`**
+### POST `/api/services`
 
 ```json
 {
@@ -179,38 +207,40 @@ Los datos inválidos generan respuestas HTTP `400` con mensajes descriptivos.
 }
 ```
 
-**POST `/api/bookings`**
+### POST `/api/bookings`
 
 ```json
 {
   "clientName": "Cliente Prueba",
   "clientEmail": "cliente@email.com",
-  "date": "2026-11-25",
+  "date": "2027-03-25",
   "time": "10:00",
   "status": "pendiente",
   "services": []
 }
 ```
 
-También es posible crear una reserva con servicios asociados:
+Ejemplo de reserva confirmada con un servicio asociado:
 
 ```json
 {
   "clientName": "Cliente Prueba",
   "clientEmail": "cliente@email.com",
-  "date": "2026-11-25",
-  "time": "10:00",
-  "status": "pendiente",
+  "date": "2027-03-25",
+  "time": "11:00",
+  "status": "confirmada",
   "services": [
     {
       "service": "REEMPLAZAR_POR_OBJECTID_VALIDO",
-      "quantity": 2
+      "quantity": 1
     }
   ]
 }
 ```
 
-El identificador del ejemplo debe reemplazarse por el `_id` real de un servicio existente y disponible.
+El identificador debe reemplazarse por el `_id` real de un servicio existente y disponible.
+
+Las reservas confirmadas requieren al menos un servicio asociado y un horario disponible.
 
 ## Vistas con Handlebars
 
@@ -219,81 +249,28 @@ La aplicación incorpora vistas renderizadas desde el servidor utilizando datos 
 | Método | Ruta | Descripción |
 |---|---|---|
 | GET | `/views/services` | Visualizar el catálogo de servicios |
-| GET | `/views/availability` | Visualizar reservas y registrar nuevas reservas |
+| GET | `/views/availability` | Visualizar y crear reservas |
 
-Las vistas reutilizan las capas existentes de la aplicación, sin consultas directas a la base de datos.
+La vista de reservas incluye un formulario con datos del cliente, fecha, hora, estado, servicio y cantidad.
+
+Las vistas reutilizan las capas existentes de la aplicación, sin realizar consultas directas a la base de datos.
 
 ## Comunicación en tiempo real
 
-Se utiliza **Socket.IO** para actualizar las vistas sin necesidad de recargar el navegador.
+Se utiliza **Socket.IO** para mantener actualizadas las vistas sin recargar el navegador.
 
-La aplicación permite:
+### Eventos de reservas
 
-- Actualizar el catálogo ante la creación, modificación o eliminación de servicios.
-- Actualizar la lista de reservas al registrar una nueva reserva.
-- Crear reservas desde la vista de disponibilidad mediante Socket.IO.
-- Mostrar mensajes de error cuando una operación no supera las validaciones.
-
-Cuando se crea una reserva mediante `POST /api/bookings`, el servidor emite el evento `bookingCreated`, que es recibido por los clientes conectados.
-
-### Cómo probar la actualización en tiempo real
-
-1. Iniciar el servidor con `npm run dev`.
-2. Abrir `http://localhost:8080/views/availability` en el navegador.
-3. En Postman, realizar una solicitud `POST` a `http://localhost:8080/api/bookings`, seleccionando **Body → raw → JSON**.
-4. Enviar el siguiente cuerpo:
-
-```json
-{
-  "clientName": "Prueba Tiempo Real",
-  "clientEmail": "prueba@example.com",
-  "date": "2026-11-25",
-  "time": "14:30",
-  "status": "pendiente",
-  "services": []
-}
-```
-
-5. Verificar que Postman devuelva `201 Created`.
-6. Comprobar que la nueva reserva aparezca automáticamente en `/views/availability`, sin recargar la página.
-
-Esta prueba demuestra la integración entre la API REST, MongoDB, Socket.IO y Handlebars.
-
-## Manejo de errores
-
-La API utiliza los siguientes códigos HTTP:
-
-| Código | Descripción |
+| Evento | Función |
 |---|---|
-| 200 | Operación exitosa |
-| 201 | Recurso creado |
-| 400 | Datos, parámetros o identificadores inválidos |
-| 404 | Recurso no encontrado |
-| 500 | Error interno del servidor |
+| `createBooking` | Recibir una solicitud de creación desde el formulario |
+| `bookingCreated` | Notificar una nueva reserva |
+| `bookingUpdated` | Notificar la actualización de una reserva |
+| `bookingDeleted` | Notificar la eliminación de una reserva |
 
-Las respuestas de error siguen un formato unificado:
+### Eventos de servicios
 
-```json
-{
-  "error": "Servicio no encontrado"
-}
-```
-
-Los errores de validación incluyen información sobre los campos inválidos.
-
-## Pruebas
-
-Los endpoints fueron probados mediante **Postman**, verificando:
-
-- Operaciones CRUD de servicios y reservas.
-- Filtros, paginación y ordenamiento.
-- Metadatos y enlaces de navegación.
-- Validaciones con Zod y respuestas HTTP `400`.
-- Validación de identificadores MongoDB.
-- Asociación de servicios con cantidades.
-- Recuperación de reservas mediante `populate()`.
-- Manejo de recursos inexistentes y servicios no disponibles.
-
-También se verificaron las vistas con **Handlebars** y las actualizaciones en tiempo real mediante **Socket.IO**.
-
-Los datos se almacenan en **MongoDB Atlas**, sin utilizar archivos JSON como sistema de persistencia.
+| Evento | Función |
+|---|---|
+| `serviceCreated` | Incorporar un servicio al catálogo |
+| `service

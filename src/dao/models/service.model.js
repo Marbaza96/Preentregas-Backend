@@ -16,7 +16,11 @@ const serviceSchema = new mongoose.Schema(
         duration: {
             type: Number,
             required: true,
-            min: 1
+            min: 1,
+            validate: {
+                validator: Number.isInteger,
+                message: "La duración debe ser un número entero"
+            }
         },
         price: {
             type: Number,
